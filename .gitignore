@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*.xlsx
+~$*.xls
+*.sql.bak
+*.pbix.tmp
+.vscode/
+.idea/
+*.swp
+*.log
+.env
