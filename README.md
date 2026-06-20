@@ -1,61 +1,79 @@
-# E-commerce Checkout Funnel: Revenue Leak & Recovery Modeling
+# E-commerce Checkout Funnel — Revenue Leak Analysis
 
-**Author:** Isha Jangid
-**One-line finding:** [TBD — fill in after Day 5]
+> **TL;DR:** Identified $19,716 in recoverable revenue (74% of total leak) by analyzing a 4-stage e-commerce checkout funnel on 12,330 sessions. Ranked 3 ops interventions by ROI using a counterfactual model.
 
-## The question
-Where does revenue leak in an e-commerce checkout funnel between the
-user landing on the site and completing a purchase, and which
-interventions would recover the most lost revenue?
+![Dashboard](outputs/dashboard_screenshot.png)
 
-## Why this matters
-Funnel analysis is the single most-applied analytical pattern in
-e-commerce, payments, and on-demand delivery — three of the largest
-sectors hiring junior analysts in India today. A clean funnel analysis
-paired with counterfactual revenue modelling mirrors the work a real
-Business Analyst at Razorpay (payments funnel), Amazon (checkout
-funnel), or Swiggy (order funnel) would deliver weekly.
+## Problem
 
-## Scope
-- **Dataset:** Online Shoppers Purchasing Intention Dataset
-  (UCI Machine Learning Repository)
-- **Volume:** 12,330 user sessions
-- **Outcome variable:** Revenue (Yes/No, ~15% baseline conversion)
-- **Funnel stages:** Landed → Engaged Browse → Checkout Intent → Purchased
-- **Segmentation:** Visitor type, Weekend, Month, Special Day proximity,
-  Traffic Type, Region
+E-commerce sites lose most users between landing and checkout. The question this project answers: **where in the funnel is the biggest revenue leak, and how much is fixing it worth?**
 
-## The 5 business questions
-1. Where in the funnel does the biggest drop-off happen?
-2. What is each stage-level leak worth in recoverable revenue?
-3. How do leaks differ by customer segment (new vs returning, weekend
-   vs weekday, month)?
-4. Do special shopping days actually lift conversion?
-5. What separates "engaged-but-didn't-buy" sessions from
-   "engaged-and-bought" sessions?
+## Dataset
 
-## Method
-1. Load the CSV into MySQL — one fact table `sessions` with all 18 columns
-2. Define the 4-stage funnel using session-behavior rules:
-   - Landed: all sessions
-   - Engaged Browse: ProductRelated >= 2 OR ProductRelated_Duration > 0
-   - Checkout Intent: PageValues > 0
-   - Purchased: Revenue = TRUE
-3. Write 8–10 SQL queries answering the 5 business questions using
-   CTEs, window functions, and segment-level CASE logic
-4. Cross-validate each SQL output in Excel pivot tables
-5. Build a 3-page Power BI dashboard:
-   - Page 1: Funnel Overview (KPIs + headline funnel)
-   - Page 2: Segment Deep-Dive (heatmap + filterable comparison)
-   - Page 3: Counterfactual & Recommendations (what-if sliders +
-     ranked interventions)
-6. Write a 1-page recommendation memo to a hypothetical Head of Growth
+UCI Online Shoppers Purchasing Intention Dataset — 12,330 sessions, 17 behavioral features + binary purchase outcome.
+Source: https://archive.ics.uci.edu/dataset/468/online+shoppers+purchasing+intention+dataset
 
-## Tools
-MySQL · Excel (Power Query, Pivot Tables) · Power BI
+## Methodology
 
-## Findings
-[TBD]
+1. **SQL (MySQL):** Cleaned the raw CSV, defined a strictly-nested 4-stage funnel:
+   - **Landed** — all sessions
+   - **Engaged Browse** — viewed ≥2 product pages OR has product browse time OR has PageValue
+   - **Checkout Intent** — has PageValue > 0
+   - **Purchased** — Revenue = TRUE
+2. **Segment analysis:** Computed conversion by VisitorType, Weekend/Weekday, SpecialDay proximity, Month
+3. **Counterfactual model:** Quantified incremental revenue if each stage's conversion improved by +10 percentage points, holding other stages constant
+4. **Power BI dashboard:** Surfaced the leak + recovery model to a single executive view
 
-## Recommendation
-[TBD — 1-page memo]
+## Key Findings
+
+- **Biggest leak: Engaged → Intent (Stage 2→3).** Only 26% of engaged browsers reach a value-tracked page.
+- **Recoverable revenue from a +10pp fix on Stage 2→3: $19,716** — 2.3× more than any other intervention.
+- **Counterintuitive: new visitors convert 1.8× better than returning** (24.9% vs 13.9%). Marketing channels deliver high-intent traffic.
+- **Counterintuitive: sessions near special shopping days convert 2.7× worse** than normal days (6.2% vs 16.5%). Likely price-shoppers comparing deals.
+- **PageValue is the strongest predictor.** Sessions with PageValue > 100 convert at 87%; sessions with PageValue = 0 convert at 3.9%.
+
+## Recovery Model
+
+| Intervention | Recoverable Revenue | Rank |
+|---|---|---|
+| +10pp on Stage 2→3 (Engaged → Intent) | **$19,716** | #1 |
+| +10pp on Stage 3→4 (Intent → Purchase) | $8,451 | #2 |
+| +10pp on Stage 1→2 (Landed → Engaged) | $2,563 | #3 |
+
+## Tech Stack
+
+- **Database:** MySQL 8.0 (data load, funnel definition, segment analysis)
+- **Modeling:** DAX (calculated tables, measures, sort-by columns)
+- **Visualization:** Power BI Desktop
+- **Other:** Excel (data validation), Git/GitHub
+
+## File Structure
+
+    ecommerce-funnel-revenue-leak/
+    ├── data/
+    │   └── online_shoppers_intention.csv
+    ├── sql/
+    │   ├── 01_setup.sql
+    │   ├── 02_funnel_construction.sql
+    │   ├── 03_segment_analysis.sql
+    │   ├── 04_special_day_analysis.sql
+    │   ├── 05_browser_vs_buyer.sql
+    │   └── 06_counterfactual_model.sql
+    ├── outputs/
+    │   ├── funnel_dashboard.pbix
+    │   └── dashboard_screenshot.png
+    └── README.md
+
+## How to Reproduce
+
+1. Clone this repo
+2. Run `sql/01_setup.sql` against MySQL to create the `funnel_analysis` database and load the dataset
+3. Run `sql/02-06` in sequence to compute funnel metrics
+4. Open `outputs/funnel_dashboard.pbix` in Power BI Desktop
+5. Edit the MySQL data source connection if needed (Home → Transform data → Data source settings)
+
+## Author
+
+Isha Jangid · [LinkedIn](https://www.linkedin.com/in/ishajangid/) · ishajangid1802@gmail.com
+
+
